@@ -4,6 +4,25 @@
 
 This script automates the login process and retrieves information about study fees (`tagihan`) from the Sistem Informasi Akademik (Academic Information System) of Universitas Mercu Buana. Two versions of the script are available: one in JavaScript (`login.js`) using Puppeteer and the other in Python (`login.py`) using Pyppeteer.
 
+### Cloning or Downloading the Project 🔄
+
+1. Clone the project using Git:
+
+   ```bash
+   git clone https://github.com/RehanDias/cek-tagihan-umb.git
+   ```
+
+   OR
+
+   Download the project directly from the [GitHub repository](https://github.com/RehanDias/cek-tagihan-umb).
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd cek-tagihan-umb
+   ```
+
+
 ## Usage
 
 ### JavaScript Version (`login.js`) 🟢
