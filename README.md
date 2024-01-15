@@ -44,12 +44,13 @@ This script automates the login process and retrieves information about study fe
 
 1. Install [Python](https://www.python.org/).
 2. Open a terminal and navigate to the project directory.
-3. Run `pip install pyppeteer` to install the required packages.
+3. Run `pip install -r requirements.txt` to install the required packages.
 
 #### Execution
 
 1. Run the script using the command: `python login.py`.
 2. Enter your username and password when prompted.
+
 
 ## Checking Study Fees (`Tagihan`) 💰
 
