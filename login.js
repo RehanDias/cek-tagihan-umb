@@ -1,20 +1,27 @@
+// Importing necessary libraries
 const puppeteer = require("puppeteer");
 const readline = require("readline");
 const ExcelJS = require("exceljs");
+
+// Creating an interface for reading user input
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
+// Function to initiate login and navigate to the billing page
 async function loginAndNavigateToTagihan() {
+  // Launching Puppeteer browser
   const browser = await puppeteer.launch({ headless: "new" });
   const page = await browser.newPage();
 
   try {
+    // Navigating to the login page
     await page.goto("https://sia.mercubuana.ac.id/gate.php/login", {
       waitUntil: "domcontentloaded",
     });
 
+    // Clearing console and initiating the login process
     console.clear();
     await loginWithRetry(page);
   } catch (error) {
@@ -22,17 +29,22 @@ async function loginAndNavigateToTagihan() {
   }
 }
 
-async function loginWithRetry(page) {
+// Function to handle login with retry mechanism
+async function loginWithRetry(page, username) {
   try {
-    const username = await askQuestion("Enter your username: ");
+    // Asking user for username and password
+    const enteredUsername = await askQuestion("Enter your username: ");
     const password = await askQuestion("Enter your password: ");
 
-    await page.type('input[name="username"]', username);
+    // Entering username and password on the login page
+    await page.type('input[name="username"]', enteredUsername);
     await page.type('input[name="password"]', password);
 
+    // Clicking the login button and waiting for 2 seconds
     await page.click(".bottom-right-login-container .rounded-submit");
     await page.waitForTimeout(2000);
 
+    // Checking for login errors
     const passwordErrorSelector = ".alert.alert-error";
     const hasPasswordError = await page.evaluate((selector) => {
       const errorElement = document.querySelector(selector);
@@ -51,6 +63,7 @@ async function loginWithRetry(page) {
         : false;
     }, usernameErrorSelector);
 
+    // Handling login errors and initiating retry if needed
     if (hasUsernameError) {
       console.clear();
       console.log(`Invalid username or account not found.`);
@@ -65,35 +78,44 @@ async function loginWithRetry(page) {
       return;
     }
 
-    await navigateToTagihan(page);
+    // If login is successful, navigate to billing page
+    await navigateToTagihan(page, enteredUsername);
   } catch (error) {
     console.error("Error during login:", error);
   }
 }
 
+// Function to handle user input and initiate login retry
 async function askForCredentialsAndLogin(page) {
   try {
-    await loginWithRetry(page);
+    await loginWithRetry(page, username);
   } catch (error) {
     console.error("Error during login retry:", error);
   }
 }
 
-async function navigateToTagihan(page) {
+// Function to navigate to the billing page and extract information
+async function navigateToTagihan(page, username) {
   try {
+    // Navigating to the billing page
     await page.goto("https://sia.mercubuana.ac.id/akad.php/biomhs/lst", {
       waitUntil: "domcontentloaded",
     });
 
+    // Displaying success message after login
     console.log(`Login Success.`);
+
+    // Waiting for the billing page to load
     await page.waitForSelector("#tagihan_wajibbayar a", {
       visible: true,
       timeout: 10000,
     });
     console.clear();
 
+    // Extracting the URL for the billing page
     const tagihanURL = await page.$eval("#tagihan_wajibbayar a", (a) => a.href);
 
+    // Processing billing information if the URL is found
     if (tagihanURL) {
       const penngembanganInfo = await biayaSumbanganPenngembangan(
         tagihanURL,
@@ -101,21 +123,26 @@ async function navigateToTagihan(page) {
       );
       const pendidikanInfo = await biayaSumbanganPendidikan(tagihanURL, page);
 
-      // Save to Excel with both types of fee information
-      await writeToExcel([penngembanganInfo, pendidikanInfo]);
+      // Passing username and billing information to writeToExcel function
+      await writeToExcel(username, [penngembanganInfo, pendidikanInfo]);
     } else {
       console.log(`URL Tagihan tidak ditemukan.`);
     }
   } catch (error) {
     console.error("Error during navigation to tagihan:", error);
   } finally {
+    // Closing the Puppeteer page after processing
     await page.close();
   }
 }
 
+// Function to extract information related to 'Penngembangan' tagihan
 async function biayaSumbanganPenngembangan(url, page) {
   try {
+    // Navigate to the specified URL and wait for the page to load
     await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    // Wait for the target table to be visible
     await page.waitForSelector(
       'table[align="center"][width="80%"][border="1"]',
       {
@@ -124,15 +151,19 @@ async function biayaSumbanganPenngembangan(url, page) {
       }
     );
 
+    // Extract tagihan information using page evaluation
     const tagihanInfo = await page.evaluate(() => {
+      // Select all rows in the target table
       const rows = document.querySelectorAll(
         'table[align="center"][width="80%"][border="1"] tr'
       );
       const TglJadwalBelumBayar = [];
 
+      // Loop through each row and extract relevant data
       rows.forEach((row) => {
         const columns = row.querySelectorAll("td.text10");
 
+        // Check if the row has enough columns
         if (columns.length >= 7) {
           const ang = columns[0].innerText.trim();
           const tglJadwal = columns[1].innerText.trim();
@@ -140,6 +171,7 @@ async function biayaSumbanganPenngembangan(url, page) {
           const tglBayar = columns[3].innerText.trim();
           const bayarTagihan = columns[4].innerText.trim();
 
+          // Check if the tagihan is not paid (tglBayar and bayarTagihan are empty)
           if (!tglBayar && !bayarTagihan) {
             TglJadwalBelumBayar.push({
               ang,
@@ -150,27 +182,34 @@ async function biayaSumbanganPenngembangan(url, page) {
         }
       });
 
+      // Select additional information from another table
       const infoTableRows = document.querySelectorAll(
         'tr.text10b > td[width="5%"][align="center"][colspan="7"][bgcolor="#ffffff"] > table[align="center"][width="50%"] tr'
       );
 
+      // Create an object to store tagihan data
       const tagihanData = {};
 
+      // Loop through each row and extract key-value pairs
       infoTableRows.forEach((row) => {
         const keyElement = row.querySelector("td.text10b");
         const valueElement = row.querySelector("td.text10b + td.text10b");
 
+        // Check if both key and value elements exist
         if (keyElement && valueElement) {
           const key = keyElement.innerText.trim();
           const value = valueElement.innerText.trim();
 
+          // Store key-value pairs in the tagihanData object
           tagihanData[key] = value;
         }
       });
 
+      // Return an object with tagihan information
       return { type: "Penngembangan", TglJadwalBelumBayar, ...tagihanData };
     });
 
+    // Display extracted information in the console
     if (tagihanInfo) {
       console.log("------------------------------------------------");
       console.log("BIAYA SUMBANGAN PENGEMBANGAN");
@@ -178,6 +217,7 @@ async function biayaSumbanganPenngembangan(url, page) {
       console.log("Total Pembayaran:", tagihanInfo["Total Pembayaran :"]);
       console.log("Saldo:", tagihanInfo["Saldo :"]);
 
+      // Display unpaid tagihan information if any
       if (tagihanInfo.TglJadwalBelumBayar.length > 0) {
         console.log("\nTagihan yang belum di bayar:");
         tagihanInfo.TglJadwalBelumBayar.forEach((tagihan) => {
@@ -192,6 +232,7 @@ async function biayaSumbanganPenngembangan(url, page) {
         console.log("------------------------------------------------");
       }
 
+      // Return the extracted tagihan information
       return tagihanInfo;
     } else {
       console.log(
@@ -200,14 +241,19 @@ async function biayaSumbanganPenngembangan(url, page) {
       return null;
     }
   } catch (error) {
+    // Handle errors during the extraction process
     console.error("Error extracting tagihan info:", error);
     return null;
   }
 }
 
+// Function to extract information related to 'Pendidikan' tagihan
 async function biayaSumbanganPendidikan(url, page) {
   try {
+    // Navigate to the specified URL and wait for the page to load
     await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    // Wait for the target table to be visible
     await page.waitForSelector(
       'table[align="center"][width="80%"][border="1"]',
       {
@@ -216,15 +262,19 @@ async function biayaSumbanganPendidikan(url, page) {
       }
     );
 
+    // Extract tagihan information using page evaluation
     const tagihanInfo = await page.evaluate(() => {
+      // Select all rows in the target table
       const rows = document.querySelectorAll(
         'table[align="center"][width="80%"][border="1"] tr'
       );
       const TglJadwalBelumBayar = [];
 
+      // Loop through each row and extract relevant data
       rows.forEach((row) => {
         const columns = row.querySelectorAll("td.text10");
 
+        // Check if the row has enough columns
         if (columns.length >= 8) {
           const ang = columns[0].innerText.trim();
           const smt = columns[1].innerText.trim();
@@ -233,6 +283,7 @@ async function biayaSumbanganPendidikan(url, page) {
           const tglBayar = columns[4].innerText.trim();
           const bayarTagihan = columns[5].innerText.trim();
 
+          // Check if the tagihan is not paid (tglBayar and bayarTagihan are empty)
           if (!tglBayar && !bayarTagihan) {
             TglJadwalBelumBayar.push({
               ang,
@@ -244,32 +295,39 @@ async function biayaSumbanganPendidikan(url, page) {
         }
       });
 
+      // Select additional information from another table
       const infoTableRows = document.querySelectorAll(
         'table[align="center"][width="50%"] tr'
       );
       const tagihanData = {};
 
+      // Loop through each row and extract key-value pairs
       infoTableRows.forEach((row) => {
         const keyElement = row.querySelector("td.text10b");
         const valueElement = row.querySelector("td.text10b + td.text10b");
 
+        // Check if both key and value elements exist
         if (keyElement && valueElement) {
           const key = keyElement.innerText.trim();
           const value = valueElement.innerText.trim();
 
+          // Store key-value pairs in the tagihanData object
           tagihanData[key] = value;
         }
       });
 
+      // Return an object with tagihan information
       return { type: "Pendidikan", TglJadwalBelumBayar, ...tagihanData };
     });
 
+    // Display extracted information in the console
     console.log("------------------------------------------------");
     console.log("BIAYA SUMBANGAN PENDIDIKAN");
     console.log("Total Tagihan:", tagihanInfo["Total Tagihan :"]);
     console.log("Total Pembayaran:", tagihanInfo["Total Pembayaran :"]);
     console.log("Saldo:", tagihanInfo["Saldo :"]);
 
+    // Display unpaid tagihan information if any
     if (tagihanInfo.TglJadwalBelumBayar.length > 0) {
       console.log("\nTagihan yang belum di bayar:\n");
       tagihanInfo.TglJadwalBelumBayar.forEach((tagihan) => {
@@ -283,19 +341,27 @@ async function biayaSumbanganPendidikan(url, page) {
       console.log("------------------------------------------------");
     }
 
+    // Return the extracted tagihan information
     return tagihanInfo;
   } catch (error) {
+    // Handle errors during the extraction process
     console.error("Error extracting tagihan info:", error);
     return null;
   }
 }
 
-async function writeToExcel(tagihanInfos) {
+// Function to write extracted data to Excel file
+async function writeToExcel(username, tagihanInfos) {
   try {
     const workbook = new ExcelJS.Workbook();
-    const combinedWorksheet = workbook.addWorksheet("CombinedSheet");
+    const combinedWorksheet = workbook.addWorksheet("TAGIHAN");
 
     tagihanInfos.forEach((tagihanInfo) => {
+      // Skip writing if Saldo is 0
+      if (parseFloat(tagihanInfo["Saldo :"]) === 0) {
+        return;
+      }
+
       // Writing summary for each type of tagihan
       combinedWorksheet.addRow([
         `${tagihanInfo.type} - Total Tagihan`,
@@ -305,30 +371,33 @@ async function writeToExcel(tagihanInfos) {
         `${tagihanInfo.type} - Total Pembayaran`,
         tagihanInfo["Total Pembayaran :"],
       ]);
-      combinedWorksheet.addRow([
-        `${tagihanInfo.type} - Saldo`,
-        tagihanInfo["Saldo :"],
-      ]);
+
+      const saldoRow = `${tagihanInfo.type} - Saldo`;
+      combinedWorksheet.addRow([saldoRow, tagihanInfo["Saldo :"]]);
 
       // Adding an empty row for better separation
       combinedWorksheet.addRow([]);
 
       // Writing headers for the data
-      combinedWorksheet.addRow([
-        "Ang",
-        "Smt",
-        "Tanggal Jadwal",
-        "Jumlah Tagihan",
-      ]);
+      if (tagihanInfo.type === "Penngembangan") {
+        combinedWorksheet.addRow(["Ang", "Tanggal Jadwal", "Jumlah Tagihan"]);
+      } else if (tagihanInfo.type === "Pendidikan") {
+        combinedWorksheet.addRow([
+          "Ang",
+          "Smt",
+          "Tanggal Jadwal",
+          "Jumlah Tagihan",
+        ]);
+      }
 
       // Writing data for each type of tagihan
       tagihanInfo.TglJadwalBelumBayar.forEach((tagihan) => {
-        combinedWorksheet.addRow([
-          tagihan.ang,
-          tagihan.smt,
-          tagihan.tglJadwal,
-          tagihan.jmlTagihan,
-        ]);
+        const data = [tagihan.ang];
+        if (tagihanInfo.type === "Pendidikan") {
+          data.push(tagihan.smt);
+        }
+        data.push(tagihan.tglJadwal, tagihan.jmlTagihan);
+        combinedWorksheet.addRow(data);
       });
 
       // Adding an empty row as a separator between types of tagihan
@@ -336,12 +405,15 @@ async function writeToExcel(tagihanInfos) {
     });
 
     // Save the workbook to a file
-    await workbook.xlsx.writeFile("tagihan_anda_combined.xlsx");
+    const fileName = `${username}-Tagihan.xlsx`;
+    await workbook.xlsx.writeFile(fileName);
+    process.exit();
   } catch (error) {
     console.error("Error writing to Excel:", error);
   }
 }
 
+// Function to ask a question and return the user's input
 async function askQuestion(question) {
   return new Promise((resolve) => {
     rl.question(question, (answer) => {

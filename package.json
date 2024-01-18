@@ -1,16 +1,30 @@
 {
-  "name": "sso-login",
-  "version": "1.0.0",
+  "name": "cek-tagihan-umb",
+  "version": "1.0.3",
   "description": "tools used to get the bill value without opening a browser",
   "main": "login.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "login": "node login.js"
   },
-  "author": "rehandiazz",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RehanDias/cek-tagihan-umb.git"
+  },
+  "keywords": [
+    "umb",
+    "mercubuana",
+    "sso-login"
+  ],
+  "author": "RehanDias",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RehanDias/cek-tagihan-umb/issues"
+  },
+  "homepage": "https://github.com/RehanDias/cek-tagihan-umb#readme",
   "dependencies": {
-    "get-contact.js": "^1.8.5",
-    "puppeteer": "^21.6.1"
+    "exceljs": "^4.4.0",
+    "puppeteer": "^21.7.0",
+    "readline": "^1.3.0"
   }
 }
