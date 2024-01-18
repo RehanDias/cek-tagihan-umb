@@ -1,28 +1,16 @@
 {
-  "name": "cek-tagihan-umb",
+  "name": "sso-login",
   "version": "1.0.0",
-  "description": "Proyek ini bertujuan untuk memberikan kemudahan kepada mahasiswa Universitas Mercu Buana (UMB) dalam mengecek tagihan kuliah mereka melalui command line atau console. Dengan memanfaatkan teknologi ini, mahasiswa dapat dengan cepat dan mudah mendapatkan informasi tagihan kuliah mereka tanpa harus membuka aplikasi atau website khusus.",
+  "description": "tools used to get the bill value without opening a browser",
   "main": "login.js",
   "scripts": {
-    "test": "node login.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "login": "node login.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/RehanDias/cek-tagihan-umb.git"
-  },
-  "keywords": [
-    "cektagihanumb",
-    "cektagihankuliah",
-    "cek-tagihan-umb"
-  ],
-  "author": "RehanDiasPratama",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/RehanDias/cek-tagihan-umb/issues"
-  },
-  "homepage": "https://github.com/RehanDias/cek-tagihan-umb#readme",
+  "author": "rehandiazz",
+  "license": "ISC",
   "dependencies": {
-    "puppeteer": "^21.7.0",
-    "readline": "^1.3.0"
+    "get-contact.js": "^1.8.5",
+    "puppeteer": "^21.6.1"
   }
 }

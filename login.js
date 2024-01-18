@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const readline = require("readline");
+const ExcelJS = require("exceljs");
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -10,12 +11,10 @@ async function loginAndNavigateToTagihan() {
   const page = await browser.newPage();
 
   try {
-    // Buka halaman login
     await page.goto("https://sia.mercubuana.ac.id/gate.php/login", {
       waitUntil: "domcontentloaded",
     });
 
-    // Isi formulir login
     console.clear();
     await loginWithRetry(page);
   } catch (error) {
@@ -31,11 +30,8 @@ async function loginWithRetry(page) {
     await page.type('input[name="username"]', username);
     await page.type('input[name="password"]', password);
 
-    // Klik tombol login
     await page.click(".bottom-right-login-container .rounded-submit");
-
-    // Wait for potential errors after login attempt
-    await page.waitForTimeout(2000); // Add a small delay to ensure elements have time to appear
+    await page.waitForTimeout(2000);
 
     const passwordErrorSelector = ".alert.alert-error";
     const hasPasswordError = await page.evaluate((selector) => {
@@ -55,34 +51,20 @@ async function loginWithRetry(page) {
         : false;
     }, usernameErrorSelector);
 
-    // For Username Error
     if (hasUsernameError) {
-      const errorMessage = await page.evaluate((selector) => {
-        const errorElement = document.querySelector(selector);
-        return errorElement ? errorElement.innerText.trim() : null;
-      }, usernameErrorSelector);
       console.clear();
       console.log(`Invalid username or account not found.`);
-
-      // Ask for username and password again
       await askForCredentialsAndLogin(page);
       return;
     } else if (hasPasswordError) {
-      const errorMessage = await page.evaluate((selector) => {
-        const errorElement = document.querySelector(selector);
-        return errorElement ? errorElement.innerText.trim() : null;
-      }, passwordErrorSelector);
       console.clear();
       console.log(
         `Incorrect password. Please check your password and try again.`
       );
-
-      // Ask for username and password again
       await askForCredentialsAndLogin(page);
       return;
     }
 
-    // If no errors, proceed with navigation
     await navigateToTagihan(page);
   } catch (error) {
     console.error("Error during login:", error);
@@ -91,7 +73,6 @@ async function loginWithRetry(page) {
 
 async function askForCredentialsAndLogin(page) {
   try {
-    // Ask for username and password again
     await loginWithRetry(page);
   } catch (error) {
     console.error("Error during login retry:", error);
@@ -114,8 +95,14 @@ async function navigateToTagihan(page) {
     const tagihanURL = await page.$eval("#tagihan_wajibbayar a", (a) => a.href);
 
     if (tagihanURL) {
-      await biayaSumbanganPenngembangan(tagihanURL, page);
-      await biayaSumbanganPendidikan(tagihanURL, page);
+      const penngembanganInfo = await biayaSumbanganPenngembangan(
+        tagihanURL,
+        page
+      );
+      const pendidikanInfo = await biayaSumbanganPendidikan(tagihanURL, page);
+
+      // Save to Excel with both types of fee information
+      await writeToExcel([penngembanganInfo, pendidikanInfo]);
     } else {
       console.log(`URL Tagihan tidak ditemukan.`);
     }
@@ -128,19 +115,15 @@ async function navigateToTagihan(page) {
 
 async function biayaSumbanganPenngembangan(url, page) {
   try {
-    // Buka halaman tagihan
     await page.goto(url, { waitUntil: "domcontentloaded" });
-
-    // Tunggu hingga elemen tabel tagihan muncul
     await page.waitForSelector(
       'table[align="center"][width="80%"][border="1"]',
       {
         visible: true,
-        timeout: 30000, // Increase the timeout to 30 seconds or more
+        timeout: 30000,
       }
     );
 
-    // Ekstrak informasi tagihan
     const tagihanInfo = await page.evaluate(() => {
       const rows = document.querySelectorAll(
         'table[align="center"][width="80%"][border="1"] tr'
@@ -157,7 +140,6 @@ async function biayaSumbanganPenngembangan(url, page) {
           const tglBayar = columns[3].innerText.trim();
           const bayarTagihan = columns[4].innerText.trim();
 
-          // Handle cells with &nbsp; as empty
           if (!tglBayar && !bayarTagihan) {
             TglJadwalBelumBayar.push({
               ang,
@@ -186,15 +168,9 @@ async function biayaSumbanganPenngembangan(url, page) {
         }
       });
 
-      // Print all keys and values for debugging
-      for (const key in tagihanData) {
-        console.log(`${key}: ${tagihanData[key]}`);
-      }
-
-      return { TglJadwalBelumBayar, ...tagihanData };
+      return { type: "Penngembangan", TglJadwalBelumBayar, ...tagihanData };
     });
 
-    // Check if tagihanInfo is not null before accessing properties
     if (tagihanInfo) {
       console.log("------------------------------------------------");
       console.log("BIAYA SUMBANGAN PENGEMBANGAN");
@@ -215,30 +191,31 @@ async function biayaSumbanganPenngembangan(url, page) {
         console.log("\nSUDAH LUNAS. TIDAK PERLU ADA YANG DI BAYAR");
         console.log("------------------------------------------------");
       }
+
+      return tagihanInfo;
     } else {
       console.log(
         "Error: Unable to extract tagihan info. Check the page structure."
       );
+      return null;
     }
   } catch (error) {
     console.error("Error extracting tagihan info:", error);
+    return null;
   }
 }
+
 async function biayaSumbanganPendidikan(url, page) {
   try {
-    // Buka halaman tagihan
     await page.goto(url, { waitUntil: "domcontentloaded" });
-
-    // Tunggu hingga elemen tabel tagihan muncul
     await page.waitForSelector(
       'table[align="center"][width="80%"][border="1"]',
       {
         visible: true,
-        timeout: 30000, // Increase the timeout to 30 seconds or more
+        timeout: 30000,
       }
     );
 
-    // Ekstrak informasi tagihan
     const tagihanInfo = await page.evaluate(() => {
       const rows = document.querySelectorAll(
         'table[align="center"][width="80%"][border="1"] tr'
@@ -256,7 +233,6 @@ async function biayaSumbanganPendidikan(url, page) {
           const tglBayar = columns[4].innerText.trim();
           const bayarTagihan = columns[5].innerText.trim();
 
-          // Handle cells with &nbsp; as empty
           if (!tglBayar && !bayarTagihan) {
             TglJadwalBelumBayar.push({
               ang,
@@ -285,7 +261,7 @@ async function biayaSumbanganPendidikan(url, page) {
         }
       });
 
-      return { TglJadwalBelumBayar, ...tagihanData };
+      return { type: "Pendidikan", TglJadwalBelumBayar, ...tagihanData };
     });
 
     console.log("------------------------------------------------");
@@ -307,11 +283,65 @@ async function biayaSumbanganPendidikan(url, page) {
       console.log("------------------------------------------------");
     }
 
-    process.exit();
+    return tagihanInfo;
   } catch (error) {
     console.error("Error extracting tagihan info:", error);
+    return null;
   }
 }
+
+async function writeToExcel(tagihanInfos) {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const combinedWorksheet = workbook.addWorksheet("CombinedSheet");
+
+    tagihanInfos.forEach((tagihanInfo) => {
+      // Writing summary for each type of tagihan
+      combinedWorksheet.addRow([
+        `${tagihanInfo.type} - Total Tagihan`,
+        tagihanInfo["Total Tagihan :"],
+      ]);
+      combinedWorksheet.addRow([
+        `${tagihanInfo.type} - Total Pembayaran`,
+        tagihanInfo["Total Pembayaran :"],
+      ]);
+      combinedWorksheet.addRow([
+        `${tagihanInfo.type} - Saldo`,
+        tagihanInfo["Saldo :"],
+      ]);
+
+      // Adding an empty row for better separation
+      combinedWorksheet.addRow([]);
+
+      // Writing headers for the data
+      combinedWorksheet.addRow([
+        "Ang",
+        "Smt",
+        "Tanggal Jadwal",
+        "Jumlah Tagihan",
+      ]);
+
+      // Writing data for each type of tagihan
+      tagihanInfo.TglJadwalBelumBayar.forEach((tagihan) => {
+        combinedWorksheet.addRow([
+          tagihan.ang,
+          tagihan.smt,
+          tagihan.tglJadwal,
+          tagihan.jmlTagihan,
+        ]);
+      });
+
+      // Adding an empty row as a separator between types of tagihan
+      combinedWorksheet.addRow([]);
+    });
+
+    // Save the workbook to a file
+    await workbook.xlsx.writeFile("tagihan_anda_combined.xlsx");
+  } catch (error) {
+    console.error("Error writing to Excel:", error);
+  }
+}
+
 async function askQuestion(question) {
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
@@ -320,5 +350,5 @@ async function askQuestion(question) {
   });
 }
 
-// Panggil fungsi loginAndNavigateToTagihan
+// Call the loginAndNavigateToTagihan function
 loginAndNavigateToTagihan();
