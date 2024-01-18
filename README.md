@@ -1,85 +1,99 @@
-# Universitas Mercu Buana SIA Tagihan Automation 🎓💻
+# 🚀 Cek Tagihan UMB (Universitas Mercu Buana) Automation
 
-## Overview
+Automate the process of logging in to the Sistem Informasi Akademik (SIA) of Universitas Mercu Buana, fetching study fees (`tagihan`) information, and saving it to an Excel file.
 
-This script automates the login process and retrieves information about study fees (`tagihan`) from the Sistem Informasi Akademik (Academic Information System) of Universitas Mercu Buana. Two versions of the script are available: one in JavaScript (`login.js`) using Puppeteer and the other in Python (`login.py`) using Pyppeteer.
+## Prerequisites
 
-### Cloning or Downloading the Project 🔄
+- **Python Script**:
+  - [Python](https://www.python.org/)
+  - Dependencies: `pyppeteer`, `pandas`
 
-1. Clone the project using Git:
+    ```bash
+    # Install Python dependencies
+    pip install -r requirements.txt
+    ```
 
-   ```bash
-   git clone https://github.com/RehanDias/cek-tagihan-umb.git
-   ```
+- **JavaScript Script**:
+  - [Node.js](https://nodejs.org/)
+  - Dependencies: `puppeteer`, `exceljs`, `readline`
 
-   OR
+    ```bash
+    # Install JavaScript dependencies
+    npm install
+    ```
 
-   Download the project directly from the [GitHub repository](https://github.com/RehanDias/cek-tagihan-umb).
+## Installation
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/RehanDias/cek-tagihan-umb.git
+    ```
 
 2. Navigate to the project directory:
 
-   ```bash
-   cd cek-tagihan-umb
-   ```
+    ```bash
+    cd cek-tagihan-umb
+    ```
 
+3. **Python Script**:
+    - Run the script:
+
+        ```bash
+        python login.py
+        ```
+
+4. **JavaScript Script**:
+    - Run the script:
+
+        ```bash
+        node login.js
+        ```
 
 ## Usage
 
-### JavaScript Version (`login.js`) 🟢
+1. Execute the respective script for your preferred language.
+2. Enter your SIA credentials when prompted.
+3. The script will log in, navigate to the billing page, and extract study fees information.
+4. Extracted data will be saved to an Excel file (`<username>-Tagihan.xlsx`).
 
-#### Installation
+## Code Details
 
-1. Install [Node.js](https://nodejs.org/).
-2. Open a terminal and navigate to the project directory.
-3. Run `npm install` to install the required packages.
+### Python Script (`login.py`)
 
-#### Execution
+- **`login_and_navigate_to_tagihan`**: Launches a browser, logs in, and navigates to the billing page.
+- **`login_with_retry`**: Handles login with a retry mechanism and error checking.
+- **`navigate_to_tagihan`**: Navigates to the billing page and extracts study fees information.
 
-1. Run the script using the command: `node login.js`.
-2. Follow the prompts to enter your username and password when prompted.
+### JavaScript Script (`login.js`)
 
-### Python Version (`login.py`) 🐍
+- **`loginAndNavigateToTagihan`**: Launches a Puppeteer browser, logs in, and navigates to the billing page.
+- **`loginWithRetry`**: Handles login with a retry mechanism and error checking.
+- **`navigateToTagihan`**: Navigates to the billing page, extracts study fees information, and saves it to an Excel file.
 
-#### Installation
+## Important Notes
 
-1. Install [Python](https://www.python.org/).
-2. Open a terminal and navigate to the project directory.
-3. Run `pip install -r requirements.txt` to install the required packages.
+- Ensure your login credentials are entered securely.
+- The scripts may need adjustments if the website structure changes.
 
-#### Execution
+## Contributing
 
-1. Run the script using the command: `python login.py`.
-2. Enter your username and password when prompted.
+Contributions are welcome! If you encounter issues or have improvements, feel free to open an issue or submit a pull request.
 
+<div align="center">
+  <a href="https://www.instagram.com/rehandiazz/" target="_blank">
+    <img src="https://img.shields.io/static/v1?message=Instagram&logo=instagram&label=&color=E4405F&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="instagram logo"  />
+  </a>
+  <a href="https://www.hackerrank.com/magearcanist" target="_blank">
+    <img src="https://img.shields.io/static/v1?message=HackerRank&logo=hackerrank&label=&color=2EC866&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="hackerrank logo"  />
+  </a>
+  <a href="paypal.me/rehandiasp" target="_blank">
+    <img src="https://img.shields.io/static/v1?message=PayPal&logo=paypal&label=&color=00457C&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="paypal logo"  />
+  </a>
+</div>
 
-## Checking Study Fees (`Tagihan`) 💰
-
-### JavaScript Version (`login.js`)
-
-In the JavaScript version (`login.js`), the script checks and displays information about the study fees related to "Biaya Sumbangan Pendidikan" and "Biaya Sumbangan Pengembangan" separately.
-
-### Python Version (`login.py`)
-
-In the Python version (`login.py`), the script also checks and displays information about the study fees related to "Biaya Sumbangan Pendidikan" and "Biaya Sumbangan Pengembangan" separately.
-
-## Dependencies 📦
-
-### JavaScript Version:
-
-- [Node.js](https://nodejs.org/)
-- [Puppeteer](https://github.com/puppeteer/puppeteer)
-- [Readline](https://nodejs.org/api/readline.html)
-
-### Python Version:
-
-- [Python](https://www.python.org/)
-- [Pyppeteer](https://github.com/miyakogi/pyppeteer)
-
-## Important Note ⚠️
-
-Both scripts are tailored for the specific structure of the login page and tagihan information on the Universitas Mercu Buana SIA. Any changes to the website structure may require modifications to the script.
-
+###
 
 ## License 📜
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT](https://github.com/RehanDias/tiktok-downloader-console/blob/main/LICENSE)
